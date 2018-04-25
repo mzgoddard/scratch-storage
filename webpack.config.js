@@ -1,7 +1,8 @@
 const path = require('path');
-const webpack = require('webpack');
+const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
 
 const base = {
+    mode: process.env.NODE_ENV === 'production' ? 'production' : 'development',
     devtool: 'cheap-module-source-map',
     module: {
         rules: [
@@ -12,18 +13,20 @@ const base = {
                 test: /\.js$/,
                 loader: 'babel-loader',
                 options: {
-                    presets: ['es2015']
+                    presets: ['env']
                 }
             }
         ]
     },
-    plugins: [
-        new webpack.optimize.UglifyJsPlugin({
-            include: /\.min\.js$/,
-            minimize: true,
-            sourceMap: true
-        })
-    ]
+    optimization: {
+        minimizer: [
+            new UglifyJsPlugin({
+                include: /\.min\.js$/,
+                sourceMap: true
+            })
+        ]
+    },
+    plugins: []
 };
 
 module.exports = [
