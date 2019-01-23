@@ -2,8 +2,12 @@
 // browser.
 let _TextDecoder;
 let _TextEncoder;
-const encoding = require('text-encoding');
 if (typeof TextDecoder === 'undefined' || typeof TextEncoder === 'undefined') {
+    /* eslint global-require:0 */
+    // Wait to require text-encoding until we _know_ its needed. This will save
+    // evaluating ~500kb of encoding indices that we do not need to evaluate if
+    // the browser provides TextDecoder and TextEncoder.
+    const encoding = require('text-encoding');
     _TextDecoder = encoding.TextDecoder;
     _TextEncoder = encoding.TextEncoder;
 } else {
