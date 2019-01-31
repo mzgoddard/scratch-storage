@@ -1,6 +1,7 @@
 /* eslint-env worker */
 
 let jobsActive = 0;
+const jobs = [];
 const complete = [];
 
 let intervalId = null;
@@ -14,6 +15,17 @@ let intervalId = null;
  */
 const registerStep = function () {
     intervalId = setInterval(() => {
+        if (jobs.length) {
+            for (let i = 0; i < jobs.length; i++) {
+                const job = jobs[i];
+                fetch(job.url, job.options)
+                    .then(response => response.arrayBuffer())
+                    .then(buffer => complete.push({id: job.id, buffer}))
+                    .catch(error => complete.push({id: job.id, error}))
+                    .then(() => jobsActive--);
+            }
+            jobs.length = 0;
+        }
         if (complete.length) {
             postMessage(complete.slice(), complete.map(response => response.buffer).filter(Boolean));
             complete.length = 0;
@@ -36,11 +48,7 @@ const onMessage = ({data: job}) => {
 
     jobsActive++;
 
-    fetch(job.url, job.options)
-        .then(response => response.arrayBuffer())
-        .then(buffer => complete.push({id: job.id, buffer}))
-        .catch(error => complete.push({id: job.id, error}))
-        .then(() => jobsActive--);
+    jobs.push(job);
 };
 
 if (self.fetch) {
