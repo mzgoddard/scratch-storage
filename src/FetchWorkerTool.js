@@ -90,7 +90,7 @@ class PrivateFetchWorkerTool {
             // main process tool (fetch or nets) will return a faster result
             // than waiting for the worker to start and send its fetch
             // operation.
-            return Promise.reject(new Error('FetchWorkerTool does not load extension-less items.'));
+            throw new Error('FetchWorkerTool does not load extension-less items.');
         }
 
         return new Promise((resolve, reject) => {
