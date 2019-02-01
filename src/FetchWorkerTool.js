@@ -31,7 +31,7 @@ class PrivateFetchWorkerTool {
 
         Promise.resolve()
             .then(() => {
-                if (this.worker === null && this._supportError !== null) {
+                if (this.worker === null && this._supportError === null) {
                     this.initWorker();
                 }
             });
@@ -102,13 +102,14 @@ class PrivateFetchWorkerTool {
             throw new Error('FetchWorkerTool does not load extension-less items.');
         }
 
+        if (this.worker === null && this._supportError === null) {
+            this.initWorker();
+        }
+
         return new Promise((resolve, reject) => {
             // TODO: Use a Scratch standard ID generator ...
             const id = Math.random().toString(16)
                 .substring(2);
-            if (this.worker === null && this._supportError !== null) {
-                this.initWorker();
-            }
             this.worker.postMessage({
                 id,
                 url,
