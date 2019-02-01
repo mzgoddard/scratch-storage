@@ -29,6 +29,15 @@ class PrivateFetchWorkerTool {
          */
         this.jobs = {};
 
+        Promise.resolve()
+            .then(() => {
+                if (this.worker === null && this._supportError !== null) {
+                    this.initWorker();
+                }
+            });
+    }
+
+    initWorker () {
         try {
             if (this.getSupported) {
                 // eslint-disable-next-line global-require
@@ -97,6 +106,9 @@ class PrivateFetchWorkerTool {
             // TODO: Use a Scratch standard ID generator ...
             const id = Math.random().toString(16)
                 .substring(2);
+            if (this.worker === null && this._supportError !== null) {
+                this.initWorker();
+            }
             this.worker.postMessage({
                 id,
                 url,
