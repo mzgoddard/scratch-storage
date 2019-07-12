@@ -48,10 +48,49 @@ const onMessage = ({data: job}) => {
 
     jobsActive++;
 
+    // performance.mark(`FetchWorkerTool:worker(${job.url.split(/\/([^/]*)$/)[1] || job.url}):start`);
     fetch(job.url, job.options)
-        .then(response => response.arrayBuffer())
-        .then(buffer => complete.push({id: job.id, buffer}))
-        .catch(error => complete.push({id: job.id, error}))
+        .then(response => {
+            if (response.ok) {
+                // performance.mark(`FetchWorkerTool:download(${job.url.split(/\/([^/]*)$/)[1] || job.url}):start`);
+                const reader = response.body.getReader();
+                return new Promise((resolve, reject) => {
+                    const chunks = [];
+                    const step = function () {
+                        reader.read().then(({done, value}) => {
+                            if (done) {
+                                // performance.mark(`FetchWorkerTool:download(${job.url.split(/\/([^/]*)$/)[1] || job.url}):stop`),
+                                // performance.measure(`FetchWorkerTool:download(${job.url.split(/\/([^/]*)$/)[1] || job.url})`, `FetchWorkerTool:download(${job.url.split(/\/([^/]*)$/)[1] || job.url}):start`, `FetchWorkerTool:download(${job.url.split(/\/([^/]*)$/)[1] || job.url}):stop`),
+                                // performance.mark(`FetchWorkerTool:arrayBuffer(${job.url.split(/\/([^/]*)$/)[1] || job.url}):start`);
+                                const uint8 = new Uint8Array(chunks.reduce((carry, chunk) => carry + chunk.length, 0));
+                                let position = 0;
+                                for (let i = 0; i < chunks.length; i++) {
+                                    uint8.set(chunks[i], position);
+                                    position += chunks[i].length;
+                                }
+                                // performance.mark(`FetchWorkerTool:arrayBuffer(${job.url.split(/\/([^/]*)$/)[1] || job.url}):stop`);
+                                // performance.measure(`FetchWorkerTool:arrayBuffer(${job.url.split(/\/([^/]*)$/)[1] || job.url})`, `FetchWorkerTool:arrayBuffer(${job.url.split(/\/([^/]*)$/)[1] || job.url}):start`, `FetchWorkerTool:arrayBuffer(${job.url.split(/\/([^/]*)$/)[1] || job.url}):stop`),
+                                resolve(uint8.buffer);
+                            } else {
+                                chunks.push(value);
+                                setTimeout(step);
+                            }
+                        }, reject);
+                    };
+                    setTimeout(step);
+                });
+                return response.arrayBuffer();
+            }
+            throw new Error(`fetch not ok: ${response.statusText}`);
+        })
+        .then(buffer => (
+            // performance.mark(`FetchWorkerTool:worker(${job.url.split(/\/([^/]*)$/)[1] || job.url}):stop`),
+            // performance.measure(`FetchWorkerTool:worker(${job.url.split(/\/([^/]*)$/)[1] || job.url})`, `FetchWorkerTool:worker(${job.url.split(/\/([^/]*)$/)[1] || job.url}):start`, `FetchWorkerTool:worker(${job.url.split(/\/([^/]*)$/)[1] || job.url}):stop`),
+            buffer.byteLength > 32 * 1024 ?
+                postMessage([{id: job.id, buffer}], [buffer]) :
+                complete.push({id: job.id, buffer})
+        ))
+        .catch(error => complete.push({id: job.id, error: {message: error.message, stack: error.stack}}))
         .then(() => jobsActive--);
 };
 
